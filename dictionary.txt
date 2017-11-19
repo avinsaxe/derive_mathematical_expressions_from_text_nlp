@@ -1,0 +1,4 @@
+vehicle_position
+truck_position
+vehicle_speed
+truck_speed
