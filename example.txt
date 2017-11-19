@@ -1,1 +1,3 @@
 Speed of vehicle A should be less than Speed of vehicle B by 10m/sec
+The speed of the vehicle is more than displacement of the vehicle
+The speed of the vehicle plus the distance of the vehicle minus the velocity
