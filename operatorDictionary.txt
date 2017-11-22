@@ -1,6 +1,7 @@
 plus,add,sum,addition,+
 minus,subtract,difference,delta,-
-divide,by,split,/
+divide,split,/
 multiply,product,times,*
 less,less,lesser,lag,behind,small,<
 greater,bigger,greater,more,ahead,>
+between,range,[]

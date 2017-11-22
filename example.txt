@@ -1,3 +1,43 @@
 Speed of vehicle A should be less than Speed of vehicle B by 10m/sec
+
 The speed of the vehicle is more than displacement of the vehicle
-The speed of the vehicle plus the distance of the vehicle minus the velocity
+vehicle_speed > vehicle_displacement
+
+The speed of the vehicle plus the distance of the vehicle minus the velocity of the vehicle
+vehicle_speed + vehicle_distance - vehicle_velocity
+
+1. Distance between vehicle and vehicle should be within the range 10m and 70m.
+Distance between FV_position and BV_position 10
+
+vehicle_position - vehicle_position < 70
+vehicle_position - vehicle_position > 10
+
+FV_Vehicle_actual_gap.x >10m
+FV_Vehicle_actual_gap.x <70m
+
+FV_Vehicle.x - BV_Vehicle.x  >10m
+FV_Vehicle.x - BV_Vehicle.x <70m
+
+
+
+2. Lateral acceleration should be less than 0.1g
+Lat_acc  < 0.1
+l_acceleration < 0.1g
+
+
+1. Operand Identification
+2. Operator Identification
+3. Subject/Object
+4. Keep the subject left of equation
+
+Speed of vehicle A should be less than Speed of vehicle B by 10m/sec
+
+Speed of vehicle A [is] O[less than] speed of vehicle B [by] 10m/sec
+
+Split:
+
+Speed of vehicle A (vehicle_A_speed)   , is (=) , O(less than) < (overwrite previous), vehicle_B_speed, by, 10m/s
+
+vehicle_A_speed = < vehicle_B_speed by 10   => vehicle_A_speed<vehicle_B_speed-10
+
+vehcile_A_speed = > vehicle_B_speed by 10   => vehicle_A_speed<vehicle_B_speed+10
