@@ -1,14 +1,16 @@
 import sys
 import nltk
 nltk.download('wordnet')
-from nltk.corpus import stopwords
+#from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
 from CosineSimilarity import CosineSimilarity
+
+stopwords = ['the', 'a', 'an']
 
 class SentenceProcessor:
 
     def __init__(self,sentence,window_size):
-        self.sentence=sentence
+        self.sentence=sentence.lower()
         self.tags=dict()   #This will store the key as the word in the sentence and the appropriate tag as the value. less_than  is tagged as operator
         self.transformedSentence=None
         self.window=int(window_size)
@@ -32,7 +34,7 @@ class SentenceProcessor:
     def initializeSentence(self):
         if self.sentence!=None:
             self.words=self.sentence.split()   #a list of words
-            self.words = [word for word in self.words if word not in stopwords.words('english')]
+            self.words = [word for word in self.words if word not in stopwords]
             print self.sentence
 
     def initializeDictionary(self):
