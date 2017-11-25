@@ -1,11 +1,26 @@
 import sys
+import re
 import nltk
 nltk.download('wordnet')
 #from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
 from CosineSimilarity import CosineSimilarity
 
-stopwords = ['the', 'a', 'an']
+# the only stop words in our sentences
+stopwords = ['the', 'a', 'an'] # caution, don't use "A" in the sentence. ex. Vehicle A < Vehicle B
+
+# all these does not help in coverting from natural language to maths, so remove these
+replacements = ['should', 'would', 'shall', 'will', 'must', 'might', 'to be', 'could', 'is', 'has', 'have', 'be',
+                'should be', 'would be', 'shall be', 'will be', 'must be', 'might be', 'could be']
+
+# first remove those having more length
+# e.g. we should first check if "should be" exists or not and then check for "should"
+# Nevertheless, this is not required as I have implemented it now. Don't remove to be on safe side
+replacements = sorted(replacements, key=lambda x: -len(x))
+
+# currently this is the only word which I could think of that we need to preserve. This will help in converting < or > to =
+reserved_words = ['by', 'is']
+
 
 class SentenceProcessor:
 
@@ -17,8 +32,11 @@ class SentenceProcessor:
         self.operandDictionaryFile= 'operandDictionary.txt'
         self.operatorDictionaryFile='operatorDictionary.txt'
         self.words=[]
-        self.operandDictionary=[]
-        self.operatorDictionary=[]
+        self.operandDictionary=[] 
+        self.operatorDictionary=[] # not used anymore, not needed. Make the code which uses this inactive, but don't remove 
+        self.operatorMapping=[] # this is a list of tuples e.g. ('plus', '+'), ('add', '+'), ('times', '*')
+        self.operators = [] # list of operators that we support
+        self.tokens = [] # this is the final list of tokens after processing
         self.phrases_k_size=[]
         self.tagged_operands=[]
         self.tagged_operators=[]
@@ -28,14 +46,75 @@ class SentenceProcessor:
         self.initializePhrasesOfSizeK()
         self.initializePhrasesOfSize1Operator()
         self.cosineSim=CosineSimilarity()
+
         # This is a list and will store the transformed sentence made entirely of keys from the tags and relative position as in
         # the original sentence
 
     def initializeSentence(self):
+
+        #print replacements
+        
+        print "original:", self.sentence
+        # remove articles/stop words
+        for _ in stopwords:
+            self.sentence = re.sub(" "+_+" ", ' ', self.sentence)
+            if (self.sentence.split(' ',1)[0] == _):
+                self.sentence = self.sentence.split(' ',1)[1]
+        
+        print "after removing articles:", self.sentence
+        
+        # remove "replacements"
+        for _ in replacements:
+            self.sentence = re.sub(" "+_+" ", ' ', self.sentence)
+        self.sentence = re.sub('is is is', 'is', self.sentence)
+        self.sentence = re.sub('is is', 'is', self.sentence)
+
+        print "after removing replacements:", self.sentence
+
+        # replace text with actual operators
+        for _ in self.operatorMapping:
+            self.sentence = re.sub(_[0], " " + _[1] + " ", self.sentence)
+        print "after replacing text with operators:", self.sentence
+
+        # change <number><unit> to <number> e.g. 10meters --> 10
+        self.sentence = re.sub('(\d+)[^ \d]*', ' \g<1>', self.sentence)
+        print "after changing numbers:", self.sentence
+
         if self.sentence!=None:
             self.words=self.sentence.split()   #a list of words
-            self.words = [word for word in self.words if word not in stopwords]
-            print self.sentence
+            print "after splitting the processed sentence:", self.words
+
+        # This is for merging the parts of string 
+        # e.g. we have all words in the sentence as a list at this moment.
+        # after this step, we will have <part A> <operator> <part B>
+        self.tokens = []
+        n = len(self.words)
+        i = 0
+        token = ""
+        while i<n:
+            if self.words[i] in self.operators or self.words[i] in reserved_words:
+                self.tokens.append(token.strip())
+                token = ""
+                self.tokens.append(self.words[i])
+            else:
+                token += " "+self.words[i]
+            i += 1
+        self.tokens.append(token)
+        print "After merging the parts of sentence together:", tokens
+
+        # now we need to process the each element of "self.tokens" list
+        # for each element:
+        #   if it is not an operator and not in reserved word:
+        #        if it is "[]":
+        #           split the next token on "and". we will get the lower and upper limit which might be numbers or variable names                
+        #        else:
+        #           use cosine similarity to get the actual variable name from the natural language description
+        #           remember, we might not need the window of 3 approach anymore, don't remove it though
+        #   else:
+        #       keep operators and reserved words as is for future processing, we 
+        #       will come back to these once we have the actual variables in the sentence 
+
+
 
     def initializeDictionary(self):
         with open(self.operandDictionaryFile, "r") as ins:
@@ -45,15 +124,19 @@ class SentenceProcessor:
                 splits=splits[0:-1]   #removing the extra '' blank character getting added
                 self.operandDictionary.append(splits)
 
+        array = []
         with open(self.operatorDictionaryFile,"r") as ins:
-            array = []
             for line in ins.readlines():
+                #print line
                 splits=line.split(",")
-                arr=splits[0:-2]
-                arr.append(splits[-1][0:-1])
-                self.operatorDictionary.append(arr)
-
-
+                self.operators.append(splits[-1][0:-1].strip())
+                for _ in splits[0:-1]:
+                    array.append((_.strip(), splits[-1][0:-1]))
+        #print array
+        self.operatorMapping = sorted(array, key=lambda x:-len(x[0]))
+        print self.operators
+        #print array
+        
 
     def initializePhrasesOfSizeK(self):
         for k in range(0,len(self.words)-self.window+1):  #possible starting points of the string
