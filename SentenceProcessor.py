@@ -62,7 +62,7 @@ class SentenceProcessor:
         for k in range(0,len(self.words)):  #possible starting points of the string
             phrase=self.words[k:k+1]
             self.phrases_1_size_operator.append(phrase)
-        print "?????",self.phrases_1_size_operator
+        # print "?????",self.phrases_1_size_operator
 
 
     #processes a single sentence
@@ -83,7 +83,7 @@ class SentenceProcessor:
                     text=" ".join(str(x) for x in operatorPhrase)
                     b=self.match(operatorTag,text,0.45)
                     if b==True:
-                        print "*********",self.operatorDictionary[j][-1]
+                        #print "*********",self.operatorDictionary[j][-1]
                         self.tagged_operators[i]=self.operatorDictionary[j][-1]
                         break
         print "Tagged operator array ",self.tagged_operators
@@ -114,11 +114,11 @@ class SentenceProcessor:
             print text1, text2
             sim=self.cosineSim.cosine_sim(text1,text2)
             pass
-        print "similarity between", text1, text2, sim
+        #print "similarity between", text1, text2, sim
         if sim>threshold:
-            print phrases, " and ",word_splits,"  matches"
+            #print phrases, " and ",word_splits,"  matches"
             return True
-        print phrases, " and ",word_splits,"  dont match"
+        #print phrases, " and ",word_splits,"  dont match"
         return False
 
 
