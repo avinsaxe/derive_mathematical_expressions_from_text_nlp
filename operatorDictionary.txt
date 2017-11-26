@@ -2,9 +2,9 @@ should be equal to,equal to,is equal to,equals,=
 plus,add,sum,addition,+
 minus,subtract,difference,delta,-
 divide,split,/
-multiply,product,times,*
+multiply,product,times,time,*
 less, less than,less,lesser,lag,behind,small,<
-greater grater than,bigger,greater,more, more than,ahead,>
+greater, grater than,bigger,greater,more,more than,ahead,>
 less than or equal to, less than equal to, less or equal to, is less than or equal to, is less than equal to, is less or equal to, <=
 greater than or equal to, greater than equal to, greater or equal to, is greater than or equal to, is greater than equal to, is greater or equal to, >=
 between,in range, within range, is between, is in range, is within range, []

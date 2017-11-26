@@ -2,4 +2,5 @@ vehicle_displacement
 vehicle_position
 truck_position
 vehicle_speed
+truck_displacement
 truck_speed

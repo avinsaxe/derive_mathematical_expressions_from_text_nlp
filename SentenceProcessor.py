@@ -43,20 +43,42 @@ class SentenceProcessor:
         self.tagged_operands=[]
         self.tagged_operators=[]
         self.phrases_1_size_operator=[]
+        self.cosineSim=CosineSimilarity()
         self.initializeDictionary()
         self.initializeSentence()
-        self.initializePhrasesOfSizeK()
-        self.initializePhrasesOfSize1Operator()
-        self.cosineSim=CosineSimilarity()
+        #self.initializePhrasesOfSizeK()
+        #self.initializePhrasesOfSize1Operator()
+
         self.merger=[]
 
         # This is a list and will store the transformed sentence made entirely of keys from the tags and relative position as in
         # the original sentence
 
-    def initializeSentence(self):
+    #USED
+    def initializeDictionary(self):
+        with open(self.operandDictionaryFile, "r") as ins:
+            array = []
+            for line in ins.readlines():
+                splits=line.split("\n")
+                splits=splits[0:-1]   #removing the extra '' blank character getting added
+                self.operandDictionary.append(splits)
+                self.operands.append(splits[0])
 
-        #print replacements
-        
+        array = []
+        with open(self.operatorDictionaryFile,"r") as ins:
+            for line in ins.readlines():
+                #print line
+                splits=line.split(",")
+                self.operators.append(splits[-1][0:-1].strip())
+                for _ in splits[0:-1]:
+                    array.append((_.strip(), splits[-1][0:-1]))
+        #print array
+        self.operatorMapping = sorted(array, key=lambda x:-len(x[0]))
+        print self.operators
+        #print array
+
+
+    def initializeSentence(self):
         print "original:", self.sentence
         # remove articles/stop words
         for _ in stopwords:
@@ -76,7 +98,7 @@ class SentenceProcessor:
 
         # replace text with actual operators
         for _ in self.operatorMapping:
-            self.sentence = re.sub(_[0], " " + _[1] + " ", self.sentence)
+           self.sentence = re.sub(_[0], " " + _[1] + " ", self.sentence)
         print "after replacing text with operators:", self.sentence
 
         # change <number><unit> to <number> e.g. 10meters --> 10
@@ -104,61 +126,96 @@ class SentenceProcessor:
             i += 1
         self.tokens.append(token)
         print "After merging the parts of sentence together:", self.tokens
-
-        # now we need to process the each element of "self.tokens" list
-        # for each element:
-        #   if it is not an operator and not in reserved word:
-        #        if it is "[]":
-        #           split the next token on "and". we will get the lower and upper limit which might be numbers or variable names                
-        #        else:
-        #           use cosine similarity to get the actual variable name from the natural language description
-        #           remember, we might not need the window of 3 approach anymore, don't remove it though
-        #   else:
-        #       keep operators and reserved words as is for future processing, we 
-        #       will come back to these once we have the actual variables in the sentence 
+        self.processTokens()
+        print "After processing of tokens ",self.tokens
+        self.expression=' '.join(self.tokens)
+        print "The mathematical expression is ",self.expression
 
 
+    def processTokens(self):
+        isRange=False
+        for i in range(0,len(self.tokens)):
+            token=self.tokens[i]
+            if token not in self.operators and token not in reserved_words:
+                if isRange: #i.e. we are talking about ranges
+                    list=token.split('and')
+                    operand1=list[0]
+                    operand2=list[1]
+                    self.tokens[i-1]='in ['+operand1+','
+                    self.tokens[i]=operand2+']'
+                    isRange=False
+                    continue
 
-    def initializeDictionary(self):
-        with open(self.operandDictionaryFile, "r") as ins:
-            array = []
-            for line in ins.readlines():
-                splits=line.split("\n")
-                splits=splits[0:-1]   #removing the extra '' blank character getting added
-                self.operandDictionary.append(splits)
-                self.operands.append(splits[0])
+                else:
+                    operand=self.operandMatching(token,0.7)
+                    if operand!='':
+                        self.tokens[i]=operand
+            if token=='[':
+                isRange=True
 
-        array = []
-        with open(self.operatorDictionaryFile,"r") as ins:
-            for line in ins.readlines():
-                #print line
-                splits=line.split(",")
-                self.operators.append(splits[-1][0:-1].strip())
-                for _ in splits[0:-1]:
-                    array.append((_.strip(), splits[-1][0:-1]))
-        #print array
-        self.operatorMapping = sorted(array, key=lambda x:-len(x[0]))
-        print self.operators
-        #print array
-        
 
-    def initializePhrasesOfSizeK(self):
-        for k in range(0,len(self.words)-self.window+1):  #possible starting points of the string
-            phrase=self.words[k:k+int(self.window)]
-            self.phrases_k_size.append(phrase)
+    def operandMatching(self,phrase,threshold):
+        maxMatch=0
+        operand=''
+        for dictionaryWordArr in self.operandDictionary:  #each line can have several similar meaning words
+            text1=dictionaryWordArr[0].split('_')
+            text1=' '.join(text1)
+            b=self.match1(phrase,text1)
+            if b>threshold and b>maxMatch:
+                maxMatch=b
+                operand=dictionaryWordArr[0]
+        return operand
 
-    def initializePhrasesOfSize1Operator(self):
-        for k in range(0,len(self.words)):  #possible starting points of the string
-            phrase=self.words[k:k+1]
-            self.phrases_1_size_operator.append(phrase)
-        # print "?????",self.phrases_1_size_operator
+
+    def match1(self,s1,s2):
+        sim=0
+        try:
+            sim=self.cosineSim.cosine_sim(s1,s2)
+        except:
+            print s1, s2
+            pass
+        #print "similarity between", text1, text2, sim
+        return sim
+
+
+
+
+
+
+
+
+
+#NOT USED
+
+    def match(self,phrases,word_splits):
+        if phrases==None or word_splits==None or len(phrases)==0 or len(word_splits)==0:
+            return False
+        text1=''
+        text2=''
+        for w1 in phrases:
+            if len(w1)!=0 and w1!='[]':
+                text1=w1+" "+text1
+        for w2 in word_splits:
+            if len(w2)!=0 and w2!='[]':
+                text2=w2+" "+text2
+
+        try:
+            sim=self.cosineSim.cosine_sim(text1,text2)
+        except:
+            print text1, text2
+            sim=self.cosineSim.cosine_sim(text1,text2)
+            pass
+        #print "similarity between", text1, text2, sim
+        return sim
+
+#Not used
 
 
     #processes a single sentence
     def processSentence(self):
-        self.operandTagging()
-        self.operatorTagging()
 
+        #self.operatorTagging()
+        self.operandTagging()
         self.tokens = nltk.word_tokenize(' '.join(self.words))
         self.tagged = nltk.pos_tag(self.tokens)
         self.nouns = [word for word,pos in self.tagged \
@@ -166,42 +223,16 @@ class SentenceProcessor:
         self.nouns = [x.lower() for x in self.nouns]
         self.merge()
 
+    def initializePhrasesOfSizeK(self):
+        for k in range(0,len(self.words)-self.window+1):  #possible starting points of the string
+            phrase=self.words[k:k+int(self.window)]
+            self.phrases_k_size.append(phrase)
 
-    #TODO Bhavesh
-    def operatorTagging(self):
-        print "Start the operator tagging "# plus,add,sum,addition:+
-        for i in range(len(self.phrases_1_size_operator)):
-            operatorPhrase=self.phrases_1_size_operator[i]  #this will give me the phrase. greater than the
-            self.tagged_operators.append('')
-            for key in self.operatorMapping: #we want to avoid the last character
-                    text=" ".join(str(x) for x in operatorPhrase)
-                    text=text+' all'
-                    key1=key[0]
-                    b=self.match(key1,text,0.7)
-                    if b==True:
-                        #print "*********",self.opertorDictionary[j][-1]
-                        self.tagged_operators[i]=key[-1]
-                        break
-        print "Tagged operator array ",self.tagged_operators
-        print self.words
-
-    #TODO Avinash
-    def operandTagging(self):
-        print "Start the operand tagging"
-        for i in range(len(self.words)):
-            self.tagged_operands.append('')
-
-        for i in range(len(self.phrases_k_size)):  #k size phrases in a sentence
-            phrase=self.phrases_k_size[i]
-            phrase=' '.join(phrase)
-            for dictionaryWordArr in self.operandDictionary:  #each line can have several similar meaning words
-                text1=dictionaryWordArr[0].split('_')
-                text1=' '.join(text1)
-                b=self.match(phrase,text1,0.9)
-                if b==True:
-                    self.tagged_operands[i]=dictionaryWordArr[0]
-        print "Tagged operand array ",self.tagged_operands
-        print self.words
+    def initializePhrasesOfSize1perator(self):
+        for k in range(0,len(self.words)):  #possible starting points of the string
+            phrase=self.words[k:k+1]
+            self.phrases_1_size_operator.append(phrase)
+            # print "?????",self.phrases_1_size_operator
 
     def merge(self):
         self.merger=[]
@@ -317,32 +348,53 @@ class SentenceProcessor:
             self.expression+=')'
 
 
-    def match(self,phrases,word_splits,threshold):
-        if phrases==None or word_splits==None or len(phrases)==0 or len(word_splits)==0:
-            return False
-        text1=''
-        text2=''
-        for w1 in phrases:
-            if len(w1)!=0 and w1!='[]':
-                text1=w1+" "+text1
-        for w2 in word_splits:
-            if len(w2)!=0 and w2!='[]':
-                text2=w2+" "+text2
 
-        try:
-            sim=self.cosineSim.cosine_sim(text1,text2)
-        except:
-            print text1, text2
-            sim=self.cosineSim.cosine_sim(text1,text2)
-            pass
-        #print "similarity between", text1, text2, sim
-        if sim>threshold:
-            #print phrases, " and ",word_splits,"  matches"
-            return True
-        #print phrases, " and ",word_splits,"  dont match"
-        return False
+    #TODO Avinash
+    def operandTagging(self):
+        print "Start the operand tagging"
+        for i in range(len(self.words)):
+            if self.words[i].isdigit():
+                self.tagged_operands.append(self.words[i])
+            else:
+                self.tagged_operands.append('')
+        for i in range(len(self.phrases_k_size)):  #k size phrases in a sentence
+            phrase=self.phrases_k_size[i]
+            phrase=' '.join(phrase)
+            threshold=0.9
+            maxMatch=0
+            for dictionaryWordArr in self.operandDictionary:  #each line can have several similar meaning words
+                text1=dictionaryWordArr[0].split('_')
+                text1=' '.join(text1)
+                b=self.match(phrase,text1)
+                if b>threshold and b>maxMatch:
+                    maxMatch=b
+                    for i1 in range(i,i+self.window):
+                        if self.tagged_operands[i1].isdigit()==False:
+                            self.tagged_operands[i1]=dictionaryWordArr[0]
+                            break
+        print "Tagged operand array ",self.tagged_operands
+        print self.words
 
+    #TODO Bhavesh. Not used
+    def operatorTagging(self):
+        print "Start the operator tagging "# plus,add,sum,addition:+
+        for i in range(len(self.words)):
+            self.tagged_operators.append('')
 
+        for i in range(len(self.phrases_k_size)):
+            operatorPhrase=self.phrases_k_size[i][0:-1]  #this will give me the phrase. greater than the
+            self.tagged_operators.append('')
+            threshold=0.7
+            maxMatch=0
+            for key in self.operatorMapping: #we want to avoid the last character
+                text=" ".join(str(x) for x in operatorPhrase)
+                key1=key[0]
+                b=self.match(key1,text)
+                if b>=threshold and b>maxMatch:
+                    maxMatch=b
+                    self.tagged_operators[i]=key[-1]
+        print "Tagged operator array ",self.tagged_operators
+        print self.words
 
 
 
