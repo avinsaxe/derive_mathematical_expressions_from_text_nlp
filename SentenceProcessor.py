@@ -4,10 +4,11 @@ import nltk
 nltk.download('wordnet')
 #from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
+nltk.download('averaged_perceptron_tagger')
 from CosineSimilarity import CosineSimilarity
 
 # the only stop words in our sentences
-stopwords = ['the', 'a', 'an'] # caution, don't use "A" in the sentence. ex. Vehicle A < Vehicle B
+stopwords = ['the', 'a', 'an','of'] # caution, don't use "A" in the sentence. ex. Vehicle A < Vehicle B
 
 # all these does not help in coverting from natural language to maths, so remove these
 replacements = ['should', 'would', 'shall', 'will', 'must', 'might', 'to be', 'could', 'is', 'has', 'have', 'be',
@@ -46,6 +47,7 @@ class SentenceProcessor:
         self.initializePhrasesOfSizeK()
         self.initializePhrasesOfSize1Operator()
         self.cosineSim=CosineSimilarity()
+        self.merger=[]
 
         # This is a list and will store the transformed sentence made entirely of keys from the tags and relative position as in
         # the original sentence
@@ -100,7 +102,7 @@ class SentenceProcessor:
                 token += " "+self.words[i]
             i += 1
         self.tokens.append(token)
-        print "After merging the parts of sentence together:", tokens
+        print "After merging the parts of sentence together:", self.tokens
 
         # now we need to process the each element of "self.tokens" list
         # for each element:
@@ -155,44 +157,91 @@ class SentenceProcessor:
         self.operandTagging()
         self.operatorTagging()
 
+        self.tokens = nltk.word_tokenize(' '.join(self.words))
+        self.tagged = nltk.pos_tag(self.tokens)
+        self.nouns = [word for word,pos in self.tagged \
+                 if (pos == 'NN' or pos == 'NNP' or pos == 'NNS' or pos == 'NNPS')]
+        self.nouns = [x.lower() for x in self.nouns]
+        self.merge()
+
+
     #TODO Bhavesh
     def operatorTagging(self):
         print "Start the operator tagging "# plus,add,sum,addition:+
         for i in range(len(self.phrases_1_size_operator)):
             operatorPhrase=self.phrases_1_size_operator[i]  #this will give me the phrase. greater than the
             self.tagged_operators.append('')
-            for j in range(len(self.operatorDictionary)):
-                for k in range(len(self.operatorDictionary[j])-1): #we want to avoid the last character
-                    operatorTag=self.operatorDictionary[j][k]
-                    operatorTag += ' cd'
+            for key in self.operatorMapping: #we want to avoid the last character
                     text=" ".join(str(x) for x in operatorPhrase)
-                    b=self.match(operatorTag,text,0.45)
+                    text=text+' all'
+                    key1=key[0]
+                    b=self.match(key1,text,0.7)
                     if b==True:
-                        #print "*********",self.operatorDictionary[j][-1]
-                        self.tagged_operators[i]=self.operatorDictionary[j][-1]
+                        #print "*********",self.opertorDictionary[j][-1]
+                        self.tagged_operators[i]=key[-1]
                         break
         print "Tagged operator array ",self.tagged_operators
+        print self.words
 
     #TODO Avinash
     def operandTagging(self):
         print "Start the operand tagging"
+        for i in range(len(self.words)):
+            self.tagged_operands.append('')
+
         for i in range(len(self.phrases_k_size)):  #k size phrases in a sentence
             phrase=self.phrases_k_size[i]
-            self.tagged_operands.append('')
+            phrase=' '.join(phrase)
             for dictionaryWordArr in self.operandDictionary:  #each line can have several similar meaning words
-                for dictionaryWord in dictionaryWordArr:
-                    word_split=dictionaryWord.split("_")
-                    b=self.match(phrase,word_split,0.75)
-                    if b==True:
-                        self.tagged_operands[i]=dictionaryWord
+                text1=dictionaryWordArr[0].split('_')
+                text1=' '.join(text1)
+                b=self.match(phrase,text1,0.9)
+                if b==True:
+                    self.tagged_operands[i]=dictionaryWordArr[0]
         print "Tagged operand array ",self.tagged_operands
+        print self.words
+
+    def merge(self):
+        self.merger=[]
+        prevWasOperator=False
+        prevWasOperand=False
+        for i in range(0,len(self.words)):
+            operand=self.tagged_operands[i]
+            operator=self.tagged_operators[i]
+            self.merger.append('')
+            if operand=='' and operator=='': #check if any variable name associated, nouns are important
+                if self.words[i].lower() in self.nouns:
+                    self.merger[i]=self.words[i]
+            if prevWasOperand==False and prevWasOperator==False:
+                if operand!='' and len(operand)>=1:
+                    self.merger[i]=operand
+                    prevWasOperand=True
+                    prevWasOperator=False
+            elif prevWasOperand:
+                if operator!='' and len(operator)>=1:
+                    self.merger[i]=operator
+                    prevWasOperator=True
+                    prevWasOperand=False
+            elif prevWasOperator:
+                if operand!='' and len(operand)>=1:
+                    self.merger[i]=operand
+                    prevWasOperator=False
+                    prevWasOperand=True
+        print self.merger #all singly occurring words are nouns, merge all before and after any operator    
 
 
     def match(self,phrases,word_splits,threshold):
         if phrases==None or word_splits==None or len(phrases)==0 or len(word_splits)==0:
             return False
-        text1=str(phrases)
-        text2=str(word_splits)
+        text1=''
+        text2=''
+        for w1 in phrases:
+            if len(w1)!=0 and w1!='[]':
+                text1=w1+" "+text1
+        for w2 in word_splits:
+            if len(w2)!=0 and w2!='[]':
+                text2=w2+" "+text2
+
         try:
             sim=self.cosineSim.cosine_sim(text1,text2)
         except:
