@@ -10,6 +10,10 @@ def main():
     #line = 'The speed of vehicle A plus speed of vehicle B is equal to2 times displacement of vehicle'
     #line = 'Speed of vehicle X should be less than Speed of vehicle Y by 10m/sec'
     #print line
+    #line = 'The product of 2 and 178'
+    #line = 'The sum of vehicle speed and vehicle displacement'
+    #line = 'The sum of vehicle speed and product of distance of vehicle and vehicle speed'
+    #line = 'The sum of X and C multiply D divide E'
     processor=SentenceProcessor(line,3)
 
 

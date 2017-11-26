@@ -134,6 +134,8 @@ class SentenceProcessor:
 
     def processTokens(self):
         isRange=False
+        isOfType=False  #manages subtraction of, product of, i.e. sum of A and B types
+        isOfTypeOp=''  #stores the operator being considered
         for i in range(0,len(self.tokens)):
             token=self.tokens[i]
             if token not in self.operators and token not in reserved_words:
@@ -145,13 +147,24 @@ class SentenceProcessor:
                     self.tokens[i]=operand2+']'
                     isRange=False
                     continue
+                if isOfType==True:
+                    list=token.split('and')
+                    operand1=list[0]
+                    operand2=list[1]
+                    self.tokens[i-1]=''+operand1+' '+isOfTypeOp
+                    self.tokens[i]=operand2
+                    isOfType=False
+                    isOfTypeOp=''
+                    continue
 
-                else:
-                    operand=self.operandMatching(token,0.7)
-                    if operand!='':
-                        self.tokens[i]=operand
+                operand=self.operandMatching(token,0.7)
+                if operand!='':
+                    self.tokens[i]=operand
             if token=='[':
                 isRange=True
+            if token=='++' or token=='--' or token=='//' or token=='**':
+                isOfType=True
+                isOfTypeOp=token[0:-1]
 
 
     def operandMatching(self,phrase,threshold):
@@ -180,13 +193,6 @@ class SentenceProcessor:
 
 
 
-
-
-
-
-
-#NOT USED
-
     def match(self,phrases,word_splits):
         if phrases==None or word_splits==None or len(phrases)==0 or len(word_splits)==0:
             return False
@@ -208,7 +214,6 @@ class SentenceProcessor:
         #print "similarity between", text1, text2, sim
         return sim
 
-#Not used
 
 
     #processes a single sentence

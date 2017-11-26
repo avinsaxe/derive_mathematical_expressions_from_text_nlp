@@ -1,8 +1,12 @@
 should be equal to,equal to,is equal to,equals,=
-plus,add,sum,addition,+
-minus,subtract,difference,delta,-
+plus,add,addition,+
+sum of,sum,sigma,++
+minus,subtract,-
+difference of,difference,delta of,--
 divide,split,/
-multiply,product,times,time,*
+division of,division,//
+multiply,times,time,*
+product of,product,**
 less, less than,less,lesser,lag,behind,small,<
 greater, grater than,bigger,greater,more,more than,ahead,>
 less than or equal to, less than equal to, less or equal to, is less than or equal to, is less than equal to, is less or equal to, <=
