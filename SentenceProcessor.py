@@ -208,7 +208,9 @@ class SentenceProcessor:
         prevWasOperator=False
         prevWasOperand=False
         prevOperatorIndex=-1
-        prevWasOperandIndex=-1
+        prevOperandIndex=-1
+        prevLeftOutOperandIndex=-1
+        prevLeftOutOperatorIndex=-1
         for i in range(0,len(self.words)):
             operand=self.tagged_operands[i]
             operator=self.tagged_operators[i]
@@ -238,20 +240,43 @@ class SentenceProcessor:
                     self.merger[i]=operand
                     prevWasOperand=True
                     prevWasOperator=False
-                    prevWasOperandIndex=i
+                    prevOperandIndex=i
 
             if prevWasOperand:
                 if operator!='' and len(operator)>=1:
-                    self.merger[i]=operator
-                    prevWasOperator=True
-                    prevWasOperand=False
-                    prevOperatorIndex=i
+                    if prevLeftOutOperandIndex>=0:
+                        self.merger[prevLeftOutOperandIndex]=operator
+                        self.merger[i]=self.tagged_operands[prevLeftOutOperandIndex]
+                        prevWasOperator=False
+                        prevWasOperand=True
+                        prevOperatorIndex=prevLeftOutOperandIndex
+                        prevOperandIndex=i
+                        prevLeftOutOperandIndex=-1
+                    else:
+                        self.merger[i]=operator
+                        prevWasOperator=True
+                        prevWasOperand=False
+                        prevOperatorIndex=i
+                if operand!='' and len(operand)>=1 and not (prevOperandIndex>=0 and operand==self.merger[prevOperandIndex]):
+                    prevLeftOutOperandIndex=i #this operand has been left out, as we are only looking for operator right now, also check that this should not be a repeating operand
             if prevWasOperator:
                 if operand!='' and len(operand)>=1:
-                    self.merger[i]=operand
-                    prevWasOperator=False
-                    prevWasOperand=True
-                    prevWasOperandIndex=i
+                    if prevLeftOutOperatorIndex>=0:
+                        self.merger[prevLeftOutOperatorIndex]=operand
+                        self.merger[i]=self.tagged_operators[prevLeftOutOperatorIndex]
+                        prevWasOperator=True
+                        prevWasOperand=False
+                        prevOperatorIndex=prevLeftOutOperandIndex
+                        prevOperandIndex=i
+                        prevLeftOutOperandIndex=-1
+                    else:
+                        self.merger[i]=operand
+                        prevWasOperator=False
+                        prevWasOperand=True
+                        prevOperandIndex=i
+                if operator!='' and len(operator)>=1 and not (prevOperatorIndex>=0 and operator==self.merger[prevOperatorIndex]):
+                    prevLeftOutOperatorIndex=i #this operand has been left out, as we are only looking for operator right now, also check that this should not be a repeating operand
+
         print self.merger #all singly occurring words are nouns, merge all before and after any operator
         self.convertToScietific()
         print self.expression
