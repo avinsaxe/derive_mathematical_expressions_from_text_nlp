@@ -1,3 +1,4 @@
+should be equal to,equal to,is equal to,equals,=
 plus,add,sum,addition,+
 minus,subtract,difference,delta,-
 divide,split,/

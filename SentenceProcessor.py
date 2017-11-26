@@ -26,6 +26,7 @@ reserved_words = ['by', 'is']
 class SentenceProcessor:
 
     def __init__(self,sentence,window_size):
+        self.operands=[]
         self.sentence=sentence.lower()
         self.tags=dict()   #This will store the key as the word in the sentence and the appropriate tag as the value. less_than  is tagged as operator
         self.transformedSentence=None
@@ -125,6 +126,7 @@ class SentenceProcessor:
                 splits=line.split("\n")
                 splits=splits[0:-1]   #removing the extra '' blank character getting added
                 self.operandDictionary.append(splits)
+                self.operands.append(splits[0])
 
         array = []
         with open(self.operatorDictionaryFile,"r") as ins:
@@ -205,6 +207,8 @@ class SentenceProcessor:
         self.merger=[]
         prevWasOperator=False
         prevWasOperand=False
+        prevOperatorIndex=-1
+        prevWasOperandIndex=-1
         for i in range(0,len(self.words)):
             operand=self.tagged_operands[i]
             operator=self.tagged_operators[i]
@@ -212,22 +216,80 @@ class SentenceProcessor:
             if operand=='' and operator=='': #check if any variable name associated, nouns are important
                 if self.words[i].lower() in self.nouns:
                     self.merger[i]=self.words[i]
+
+            if operand=='' and operator=='':
+                if self.words[i].isdigit():
+                    self.merger[i]=self.words[i]
+
+            if operator=='' and operator=='':
+                if self.words[i].lower()=='by':
+                    if prevOperatorIndex>=0 and  self.merger[prevOperatorIndex]=='>' or self.merger[prevOperatorIndex]=='>=':
+                        self.merger[i]='+'
+                        self.merger[prevOperatorIndex]='='
+                        prevOperatorIndex=i
+                    elif prevOperatorIndex>=0 and self.merger[prevOperatorIndex]=='<' or self.merger[prevOperatorIndex]=='<=':
+                        self.merger[i]='-'
+                        self.merger[prevOperatorIndex]='='
+                        prevOperatorIndex=i
+
+
             if prevWasOperand==False and prevWasOperator==False:
                 if operand!='' and len(operand)>=1:
                     self.merger[i]=operand
                     prevWasOperand=True
                     prevWasOperator=False
-            elif prevWasOperand:
+                    prevWasOperandIndex=i
+
+            if prevWasOperand:
                 if operator!='' and len(operator)>=1:
                     self.merger[i]=operator
                     prevWasOperator=True
                     prevWasOperand=False
-            elif prevWasOperator:
+                    prevOperatorIndex=i
+            if prevWasOperator:
                 if operand!='' and len(operand)>=1:
                     self.merger[i]=operand
                     prevWasOperator=False
                     prevWasOperand=True
-        print self.merger #all singly occurring words are nouns, merge all before and after any operator    
+                    prevWasOperandIndex=i
+        print self.merger #all singly occurring words are nouns, merge all before and after any operator
+        self.convertToScietific()
+        print self.expression
+
+    def convertToScietific(self):
+        self.expression=''
+        prevWasOperator=False
+        prevWasOperand=False
+        prevWasNoun=False
+        for i in range(0,len(self.merger)):
+            word=self.merger[i]
+            if word in self.operands:   #means its an operand
+                if prevWasOperand==False:
+                    if prevWasNoun==True:
+                        self.expression=self.expression+')'
+                        prevWasNoun=False
+                    self.expression=self.expression+' '+word
+                    prevWasOperand=True
+                    prevWasOperator=False
+            elif word in self.operators:
+                if prevWasOperator==False:
+                    if prevWasNoun==True:
+                        self.expression+=')'
+                        prevWasNoun=False
+                    self.expression+=' '+word
+                    prevWasOperator=True
+                    prevWasOperand=False
+            elif word.lower() in self.nouns:
+                if prevWasNoun==False:  #we can add a bracket and start writing the name
+                    self.expression+='('+word.upper()
+                    prevWasNoun=True
+                elif prevWasNoun==True:
+                    self.expression+=' '+word.upper()
+                    prevWasNoun=True
+            else:
+                self.expression+=' '+word
+        if prevWasNoun==True:
+            self.expression+=')'
 
 
     def match(self,phrases,word_splits,threshold):
