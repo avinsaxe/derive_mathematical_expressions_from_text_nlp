@@ -141,12 +141,21 @@ class SentenceProcessor:
             if token not in self.operators and token not in reserved_words:
                 if isRange: #i.e. we are talking about ranges
                     list=token.split('and')
-                    operand1=list[0]
-                    operand2=list[1]
-                    self.tokens[i-1]='in ['+operand1+','
-                    self.tokens[i]=operand2+']'
-                    isRange=False
-                    continue
+                    operand1=list[0].strip()
+                    operand2=list[1].strip()
+
+                    if(operand1.isdigit()==True and operand2.isdigit()==True):
+                        self.tokens[i-1]='in ['+operand1+','
+                        self.tokens[i]=operand2+']'
+                        isRange=False
+                        continue
+                    else:
+                        operand1=self.operandMatching(operand1,0.7)
+                        operand2=self.operandMatching(operand2,0.7)
+                        self.tokens[i-1]=operand1+' - '
+                        self.tokens[i]=operand2
+                        isRange=False
+                        continue
                 if isOfType==True:
                     list=token.split('and')
                     operand1=list[0]
@@ -165,7 +174,21 @@ class SentenceProcessor:
             if token=='++' or token=='--' or token=='//' or token=='**':
                 isOfType=True
                 isOfTypeOp=token[0:-1]
+            if token=='by':
+                prevOperator=self.prevOperator()
+                if prevOperator=='>' or prevOperator=='>=':
+                    self.tokens[i]='+'
+                elif prevOperator=='<' or prevOperator=='<=':
+                    self.tokens[i]='-'
 
+
+    def prevOperator(self):
+        operand=''
+        for i in range(0,len(self.tokens)):
+            token=self.tokens[i]
+            if token in self.operators:
+                operand=token
+        return operand
 
     def operandMatching(self,phrase,threshold):
         maxMatch=0
@@ -173,8 +196,9 @@ class SentenceProcessor:
         for dictionaryWordArr in self.operandDictionary:  #each line can have several similar meaning words
             text1=dictionaryWordArr[0].split('_')
             text1=' '.join(text1)
+            text1=text1.lower()
             b=self.match1(phrase,text1)
-            if b>threshold and b>maxMatch:
+            if b>threshold and b>maxMatch or (text1.lower()==phrase.lower()):
                 maxMatch=b
                 operand=dictionaryWordArr[0]
         return operand
@@ -206,10 +230,10 @@ class SentenceProcessor:
                 text2=w2+" "+text2
 
         try:
-            sim=self.cosineSim.cosine_sim(text1,text2)
+            sim=self.cosineSim.cosine_sim(text1.lower(),text2.lower())
         except:
             print text1, text2
-            sim=self.cosineSim.cosine_sim(text1,text2)
+            sim=self.cosineSim.cosine_sim(text1.lower(),text2.lower())
             pass
         #print "similarity between", text1, text2, sim
         return sim
