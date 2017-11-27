@@ -27,6 +27,7 @@ class SentenceProcessor:
 
     def __init__(self,sentence,window_size):
         self.operands=[]
+        self.nouns=[]
         self.sentence=sentence.lower()
         self.tags=dict()   #This will store the key as the word in the sentence and the appropriate tag as the value. less_than  is tagged as operator
         self.transformedSentence=None
@@ -46,6 +47,7 @@ class SentenceProcessor:
         self.cosineSim=CosineSimilarity()
         self.initializeDictionary()
         self.initializeSentence()
+
         #self.initializePhrasesOfSizeK()
         #self.initializePhrasesOfSize1Operator()
 
@@ -53,6 +55,12 @@ class SentenceProcessor:
 
         # This is a list and will store the transformed sentence made entirely of keys from the tags and relative position as in
         # the original sentence
+    def initializeNouns(self):
+        self.tokens = nltk.word_tokenize(' '.join(self.words))
+        self.tagged = nltk.pos_tag(self.words)
+        self.nouns = [word for word,pos in self.tagged \
+                      if (pos == 'NN' or pos == 'NNP' or pos == 'NNS' or pos == 'NNPS')]
+        self.nouns = [x.lower() for x in self.nouns]
 
     #USED
     def initializeDictionary(self):
@@ -136,6 +144,7 @@ class SentenceProcessor:
         isRange=False
         isOfType=False  #manages subtraction of, product of, i.e. sum of A and B types
         isOfTypeOp=''  #stores the operator being considered
+        prevNoun=''
         for i in range(0,len(self.tokens)):
             token=self.tokens[i]
             if token not in self.operators and token not in reserved_words:
@@ -152,8 +161,8 @@ class SentenceProcessor:
                     else:
                         operand1=self.operandMatching(operand1,0.7)
                         operand2=self.operandMatching(operand2,0.7)
-                        self.tokens[i-1]=operand1+' - '
-                        self.tokens[i]=operand2
+                        self.tokens[i-1]=prevNoun.upper()+'{'+operand1+'} - '
+                        self.tokens[i]=prevNoun.upper()+'{'+operand2+'}'
                         isRange=False
                         continue
                 if isOfType==True:
@@ -166,21 +175,26 @@ class SentenceProcessor:
                     isOfTypeOp=''
                     continue
 
+
                 operand=self.operandMatching(token,0.7)
                 if operand!='':
                     self.tokens[i]=operand
-            if token=='[':
+                    continue
+                if token.strip().isdigit():
+                    continue
+                prevNoun=token  #if everything fails, this means that this has to be a noun
+                self.tokens[i]=''
+            elif token=='[':
                 isRange=True
-            if token=='++' or token=='--' or token=='//' or token=='**':
+            elif token=='++' or token=='--' or token=='//' or token=='**':
                 isOfType=True
                 isOfTypeOp=token[0:-1]
-            if token=='by':
+            elif token=='by':
                 prevOperator=self.prevOperator()
                 if prevOperator=='>' or prevOperator=='>=':
-                    self.tokens[i]='+'
+                  self.tokens[i]='+'
                 elif prevOperator=='<' or prevOperator=='<=':
-                    self.tokens[i]='-'
-
+                  self.tokens[i]='-'
 
     def prevOperator(self):
         operand=''
@@ -245,11 +259,6 @@ class SentenceProcessor:
 
         #self.operatorTagging()
         self.operandTagging()
-        self.tokens = nltk.word_tokenize(' '.join(self.words))
-        self.tagged = nltk.pos_tag(self.tokens)
-        self.nouns = [word for word,pos in self.tagged \
-                 if (pos == 'NN' or pos == 'NNP' or pos == 'NNS' or pos == 'NNPS')]
-        self.nouns = [x.lower() for x in self.nouns]
         self.merge()
 
     def initializePhrasesOfSizeK(self):

@@ -8,3 +8,7 @@ truck_position
 vehicle_speed
 truck_displacement
 truck_speed
+vehicle_acceleration
+truck_acceleration
+vehicle_weight
+truck_weight
