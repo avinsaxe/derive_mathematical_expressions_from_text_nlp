@@ -169,8 +169,8 @@ class SentenceProcessor:
                     list=token.split('and')
                     operand1=list[0]
                     operand2=list[1]
-                    self.tokens[i-1]=''+operand1+' '+isOfTypeOp
-                    self.tokens[i]=operand2
+                    self.tokens[i-1]='('+operand1+' '+isOfTypeOp
+                    self.tokens[i]=operand2+')'
                     isOfType=False
                     isOfTypeOp=''
                     continue
