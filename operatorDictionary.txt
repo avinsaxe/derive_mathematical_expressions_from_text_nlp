@@ -3,9 +3,9 @@ plus,add,addition,+
 sum of,sum,sigma,++
 minus,subtract,-
 difference of,difference,delta of,--
-divide,split,/
+divide,split,divided by,/
 division of,division,//
-multiply,times,time,*
+multiply,times,time,multiplied by,multiplied,*
 product of,product,**
 less, less than,less,lesser,lag,behind,small,<
 greater, grater than,bigger,greater,more,more than,ahead,>

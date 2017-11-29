@@ -167,7 +167,7 @@ class SentenceProcessor:
                     operand1=''
                     operand2=''
                     if len(list)>=2:
-                        perand1=list[0].strip()
+                        operand1=list[0].strip()
                         operand2=list[1].strip()
 
                     if(operand1.isdigit()==True and operand2.isdigit()==True):
@@ -234,7 +234,9 @@ class SentenceProcessor:
             print li
             for row in range(0,maxSize):
                 str=''
-                if row<len(li) and col<len(mat[0]) and row<len(mat):
+                if list[col].isdigit():
+                    mat[row][col]=list[col]
+                elif row<len(li) and col<len(mat[0]) and row<len(mat):
                     str=li[row].name()
                     posOfDot=str.index('.')
                     str=str[:posOfDot]
@@ -251,14 +253,15 @@ class SentenceProcessor:
         phrases=[[]]
         phrases=self.convertToSynset(phrase)  #2 D matrix of synonyms
         self.maxMatch=0
-        self.threshold=0.7
+        self.threshold=0.8
         self.operand=''
+        print "The phrases are ",phrases
         for dictionaryWordArr in self.operandDictionary:  #each line can have several similar meaning words
             text1=dictionaryWordArr[0].split('_')
             text1=' '.join(text1)
             text1=text1.lower()
             visited=[[False for x in range(len(phrases[0]))] for y in range((len(phrases)))]
-            self.DFS(visited,phrases,0,0,'',text1,dictionaryWordArr[0])
+            self.DFS(visited,phrases,0,0,'',text1,dictionaryWordArr[0],phrase)
 
         return self.operand
 
@@ -277,25 +280,28 @@ class SentenceProcessor:
 
         #return '_'.join(phrase.strip().split(' '))
 
-    def check(self,phrase,text1,operan):
-        print "The phrase after DFS iteration is **** ",phrase
+    def check(self,phrase,text1,operan,originalStr):
+        #print "The phrase after DFS iteration is **** ",phrase
+        if phrase=='':
+            return
         b=self.match1(phrase,text1)
         if b>self.threshold and b>self.maxMatch or (text1.lower()==phrase.lower()):
             self.maxMatch=b
             self.operand=operan
         if self.operand!='':
             return self.operand
-        phrase=phrase.strip()
-        list=phrase.split(' ')
+        originalStr=originalStr.strip()
+        list=originalStr.split(' ')
         if list[0].isdigit():
             self.operand=phrase
             return self.operand
-        self.operand='_'.join(phrase.strip().split(' '))
+        if phrase!='':
+            self.operand='_'.join(operan.strip().split(' '))
         return self.operand
 
-    def DFS(self,visited,phrases,row,col,phrase,text1,operand):
+    def DFS(self,visited,phrases,row,col,phrase,text1,operand,originalStr):
         if col==len(visited[0]) and row<len(visited) and phrases!='':
-            self.check(phrase,text1,operand) #TODO
+            self.check(phrase,text1,operand,originalStr) #TODO
             return
         if col>=len(visited[0]) or row>=len(visited):
             return
@@ -304,12 +310,13 @@ class SentenceProcessor:
 
         visited[row][col]=True
         phrase1=phrase+' '+phrases[row][col]
-        self.DFS(visited,phrases,row,col+1,phrase1,text1,operand)
+        self.DFS(visited,phrases,row,col+1,phrase1,text1,operand,originalStr)
         visited[row][col]=False
-        self.DFS(visited,phrases,row+1,col,phrase,text1,operand) #backtracking
+        self.DFS(visited,phrases,row+1,col,phrase,text1,operand,originalStr) #backtracking
 
 
     def match1(self,s1,s2):
+        print "_____________",s1,s2
         sim=0
         try:
             sim=self.cosineSim.cosine_sim(s1,s2)
