@@ -6,9 +6,11 @@ nltk.download('wordnet')
 from nltk.corpus import wordnet as wn
 nltk.download('averaged_perceptron_tagger')
 from CosineSimilarity import CosineSimilarity
+from autocorrect import spell
+from nltk.corpus import wordnet as wn
 
 # the only stop words in our sentences
-stopwords = ['the', 'a', 'an','of'] # caution, don't use "A" in the sentence. ex. Vehicle A < Vehicle B
+stopwords = ['the', 'a', 'an'] # caution, don't use "A" in the sentence. ex. Vehicle A < Vehicle B
 
 # all these does not help in coverting from natural language to maths, so remove these
 replacements = ['should', 'would', 'shall', 'will', 'must', 'might', 'to be', 'could', 'is', 'has', 'have', 'be',
@@ -20,15 +22,17 @@ replacements = ['should', 'would', 'shall', 'will', 'must', 'might', 'to be', 'c
 replacements = sorted(replacements, key=lambda x: -len(x))
 
 # currently this is the only word which I could think of that we need to preserve. This will help in converting < or > to =
-reserved_words = ['by', 'is']
+reserved_words = ['by', 'is','range']
 
 
 class SentenceProcessor:
 
     def __init__(self,sentence,window_size):
+
         self.operands=[]
         self.nouns=[]
         self.sentence=sentence.lower()
+        self.autocorrect()
         self.tags=dict()   #This will store the key as the word in the sentence and the appropriate tag as the value. less_than  is tagged as operator
         self.transformedSentence=None
         self.window=int(window_size)
@@ -55,6 +59,15 @@ class SentenceProcessor:
 
         # This is a list and will store the transformed sentence made entirely of keys from the tags and relative position as in
         # the original sentence
+    def autocorrect(self):
+        line=''
+        for word in self.sentence.split(' '):
+	    if word.isdigit():
+		line=line+' '+word
+	    else:
+            	line=line+' '+spell(word)
+        self.sentence=line
+
     def initializeNouns(self):
         self.tokens = nltk.word_tokenize(' '.join(self.words))
         self.tagged = nltk.pos_tag(self.words)
@@ -117,7 +130,7 @@ class SentenceProcessor:
             self.words=self.sentence.split()   #a list of words
             print "after splitting the processed sentence:", self.words
 
-        # This is for merging the parts of string 
+        # This is for merging the parts of string
         # e.g. we have all words in the sentence as a list at this moment.
         # after this step, we will have <part A> <operator> <part B>
         self.tokens = []
@@ -136,7 +149,8 @@ class SentenceProcessor:
         print "After merging the parts of sentence together:", self.tokens
         self.processTokens()
         print "After processing of tokens ",self.tokens
-        self.expression=' '.join(self.tokens)
+        if self.tokens!=None and len(self.tokens)>0 and self.tokens[0]!=None:
+            self.expression=' '.join(self.tokens)
         print "The mathematical expression is ",self.expression
 
 
@@ -150,8 +164,11 @@ class SentenceProcessor:
             if token not in self.operators and token not in reserved_words:
                 if isRange: #i.e. we are talking about ranges
                     list=token.split('and')
-                    operand1=list[0].strip()
-                    operand2=list[1].strip()
+                    operand1=''
+                    operand2=''
+                    if len(list)>=2:
+                        perand1=list[0].strip()
+                        operand2=list[1].strip()
 
                     if(operand1.isdigit()==True and operand2.isdigit()==True):
                         self.tokens[i-1]='in ['+operand1+','
@@ -175,7 +192,6 @@ class SentenceProcessor:
                     isOfTypeOp=''
                     continue
 
-
                 operand=self.operandMatching(token,0.7)
                 if operand!='':
                     self.tokens[i]=operand
@@ -190,32 +206,107 @@ class SentenceProcessor:
                 isOfType=True
                 isOfTypeOp=token[0:-1]
             elif token=='by':
-                prevOperator=self.prevOperator()
-                if prevOperator=='>' or prevOperator=='>=':
+                prevOperatorPos=self.prevOperator()
+                if self.tokens[prevOperatorPos]=='>' or self.tokens[prevOperatorPos]=='>=':
                   self.tokens[i]='+'
-                elif prevOperator=='<' or prevOperator=='<=':
+                  self.tokens[prevOperatorPos]='='
+                elif self.tokens[prevOperatorPos]=='<' or self.tokens[prevOperatorPos]=='<=':
                   self.tokens[i]='-'
+                  self.tokens[prevOperatorPos]='='
 
     def prevOperator(self):
         operand=''
+        pos=-1
         for i in range(0,len(self.tokens)):
             token=self.tokens[i]
             if token in self.operators:
                 operand=token
-        return operand
+                pos=i
+        return pos
+
+    def convertToSynset(self,phrase):
+        list=phrase.strip().split()
+        maxSize=10
+        mat=[['' for x in range(len(list))] for y in range((maxSize))]
+
+        for col in range(0,len(list)):
+            li=wn.synsets(list[col])
+            print li
+            for row in range(0,maxSize):
+                str=''
+                if row<len(li) and col<len(mat[0]) and row<len(mat):
+                    str=li[row].name()
+                    posOfDot=str.index('.')
+                    str=str[:posOfDot]
+                    mat[row][col]=str
+        # for r in range(0,len(mat)):
+        #     for c in range(0,len(mat[0])):
+        #         print mat[r][c]+' '
+        #     print '\n'
+        return mat
 
     def operandMatching(self,phrase,threshold):
         maxMatch=0
         operand=''
+        phrases=[[]]
+        phrases=self.convertToSynset(phrase)  #2 D matrix of synonyms
+        self.maxMatch=0
+        self.threshold=0.7
+        self.operand=''
         for dictionaryWordArr in self.operandDictionary:  #each line can have several similar meaning words
             text1=dictionaryWordArr[0].split('_')
             text1=' '.join(text1)
             text1=text1.lower()
-            b=self.match1(phrase,text1)
-            if b>threshold and b>maxMatch or (text1.lower()==phrase.lower()):
-                maxMatch=b
-                operand=dictionaryWordArr[0]
-        return operand
+            visited=[[False for x in range(len(phrases[0]))] for y in range((len(phrases)))]
+            self.DFS(visited,phrases,0,0,'',text1,dictionaryWordArr[0])
+
+        return self.operand
+
+        #         phrase=' '.join(phrases[row])
+        #         print "Phrase is ",phrase
+        #         b=self.match1(phrase,text1)
+        #         if b>threshold and b>maxMatch or (text1.lower()==phrase.lower()):
+        #             maxMatch=b
+        #             operand=dictionaryWordArr[0]
+        # if operand!='':
+ 	    #     return operand
+        # phrase=phrase.strip()
+        # list=phrase.split(' ')
+        # if list[0].isdigit():
+        #     return phrase
+
+        #return '_'.join(phrase.strip().split(' '))
+
+    def check(self,phrase,text1,operan):
+        print "The phrase after DFS iteration is **** ",phrase
+        b=self.match1(phrase,text1)
+        if b>self.threshold and b>self.maxMatch or (text1.lower()==phrase.lower()):
+            self.maxMatch=b
+            self.operand=operan
+        if self.operand!='':
+            return self.operand
+        phrase=phrase.strip()
+        list=phrase.split(' ')
+        if list[0].isdigit():
+            self.operand=phrase
+            return self.operand
+        self.operand='_'.join(phrase.strip().split(' '))
+        return self.operand
+
+    def DFS(self,visited,phrases,row,col,phrase,text1,operand):
+        if col==len(visited[0]) and row<len(visited) and phrases!='':
+            self.check(phrase,text1,operand) #TODO
+            return
+        if col>=len(visited[0]) or row>=len(visited):
+            return
+        if visited[row][col]==True:
+            return
+
+        visited[row][col]=True
+        phrase1=phrase+' '+phrases[row][col]
+        self.DFS(visited,phrases,row,col+1,phrase1,text1,operand)
+        visited[row][col]=False
+        self.DFS(visited,phrases,row+1,col,phrase,text1,operand) #backtracking
 
 
     def match1(self,s1,s2):

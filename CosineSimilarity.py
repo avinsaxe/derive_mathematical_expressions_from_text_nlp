@@ -21,6 +21,7 @@ class CosineSimilarity:
         return [self.stemmer.stem(item) for item in tokens]
 
 
+
 '''remove punctuation, lowercase, stem'''
 
 

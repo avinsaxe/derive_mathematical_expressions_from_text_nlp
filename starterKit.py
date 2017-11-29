@@ -23,10 +23,18 @@ def main():
         #Age of Avinash is more than Age of Guds by 5 years
         #vehicle speed is 2 times as fast as truck speed
         #truck acceleration is 2 times more than vehicle_acceleration  --Not working
+        #The distance between vehicle X and vehicle Y is equal to 20 m
+        #in range
+        #between the range
+        #belongs to
 
         if line=="-1":
             break;
+
+
+
         processor=SentenceProcessor(line,3)
+
 
 
 if __name__ == "__main__":

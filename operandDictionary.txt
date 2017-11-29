@@ -4,6 +4,7 @@ truck_X
 truck_Y
 vehicle_displacement
 vehicle_position
+vehicle_distance
 truck_position
 vehicle_speed
 truck_displacement
