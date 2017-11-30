@@ -13,6 +13,10 @@ def main():
         #line = 'The speed of vehicle X plus speed of vehicle Y is equal to2 times displacement of vehicle'
         #line = 'Speed of vehicle X should be less than Speed of vehicle Y by 10m/sec'
         #print line
+        #line= 'X is less than Z'
+        #line= 'X is less than Z by 20'
+        #line = 'X is greater than Z'
+        #line='X is greater than Z by 20'
         #line = 'The product of 2 and 178'
         #line = 'The sum of vehicle speed and vehicle displacement'
         #line = 'The sum of vehicle speed and product of distance of vehicle and vehicle speed'

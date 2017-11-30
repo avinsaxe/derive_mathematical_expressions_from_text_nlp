@@ -1,3 +1,10 @@
+X_
+Y_
+Z_
+A_
+B_
+C_
+D_
 vehicle_X
 vehicle_Y
 truck_X

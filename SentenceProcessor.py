@@ -285,7 +285,7 @@ class SentenceProcessor:
         #return '_'.join(phrase.strip().split(' '))
 
     def check(self,phrase,text1,operan,originalStr):
-        #print "The phrase after DFS iteration is **** ",phrase
+        print "Tried matching ",phrase,text1
         if phrase=='':
             return
         b=self.match1(phrase,text1)
@@ -301,6 +301,7 @@ class SentenceProcessor:
             return self.operand
         if phrase!='':
             self.operand='_'.join(phrase.strip().split(' '))
+
         return self.operand
 
     def DFS(self,visited,phrases,row,col,phrase,text1,operand,originalStr):
@@ -322,12 +323,10 @@ class SentenceProcessor:
 
 
     def match1(self,s1,s2):
-        print "_____________",s1,s2
         sim=0
         try:
             sim=self.cosineSim.cosine_sim(s1,s2)
         except:
-            print s1, s2
             pass
         #print "similarity between", text1, text2, sim
         return sim
@@ -374,7 +373,6 @@ class SentenceProcessor:
         for k in range(0,len(self.words)):  #possible starting points of the string
             phrase=self.words[k:k+1]
             self.phrases_1_size_operator.append(phrase)
-            # print "?????",self.phrases_1_size_operator
 
     def merge(self):
         self.merger=[]
