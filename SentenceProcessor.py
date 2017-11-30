@@ -300,7 +300,7 @@ class SentenceProcessor:
             self.operand=phrase
             return self.operand
         if phrase!='':
-            self.operand='_'.join(operan.strip().split(' '))
+            self.operand='_'.join(phrase.strip().split(' '))
         return self.operand
 
     def DFS(self,visited,phrases,row,col,phrase,text1,operand,originalStr):
