@@ -248,6 +248,10 @@ class SentenceProcessor:
         return mat
 
     def operandMatching(self,phrase,threshold):
+        if len(phrase)<3:
+            if len(phrase.strip().split(' '))>0:
+                return ('_').join(phrase.strip().split(' '))
+            return phrase
         maxMatch=0
         operand=''
         phrases=[[]]
@@ -300,6 +304,8 @@ class SentenceProcessor:
         return self.operand
 
     def DFS(self,visited,phrases,row,col,phrase,text1,operand,originalStr):
+        if len(originalStr)<3:
+            return originalStr
         if col==len(visited[0]) and row<len(visited) and phrases!='':
             self.check(phrase,text1,operand,originalStr) #TODO
             return
