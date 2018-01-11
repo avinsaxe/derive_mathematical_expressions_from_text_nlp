@@ -1,18 +1,24 @@
 ### Extracting Mathematical Expressions from Text
 
-##### Introduction
+#### How to run
+
+```python starterkit.py```
+
+Input your mathematical sentence, and let the code run for it to give you a possible mathematical representation quickly.
+
+#### Introduction
 
 The project titled ‘Automatic Mathematical Expression Extraction from Text Using NLP Based Approaches’ works on generating mathematical expressions from text, by applying Natural Language based approaches. The project aims to identify mathematical expressions from a domain of text available from Mechanical Engineering department lab. The kind of content that mechanical engineering department is handling, is associated with identification of a limited set of mathematical expressions.
 
 
-##### About
+#### About
 
 The entire project is implemented in Python, for utilizing the enormous utilities in Natural Language domain. To execute the code, directly run the main code, after downloading required libraries.  As the project is for mechanical engineering department, and his entire focus is on speed and not on reinventing the wheel, we chose to move ahead with existing cosine similarity rule. 
 
 
-##### Approach
+#### Approach
 
-###### Step 1: Preprocess the input data
+##### Step 1: Preprocess the input data
 The identification of the operators is done utilizing regular expression matching based approach. The approach we used was to create a dictionary of all the entries of all the possible text that could mean an operator in mathematics. 
 For example, in the dictionary of operators, greater than or equal to, greater than equal to, can map to ‘≥’. In addition to that, the text data, sum of, addition, add, plus, etc. maps to the operator ‘+’.
 For identification of operators, we first developed a window based approach, where we analyzed all the possible substrings of length in the original string input. We used cosine similarity rule to match all the possible operators with the text, using cosine similarity rule. 
@@ -21,7 +27,7 @@ We later came up with the idea of identifying operators in-place in the input st
 This approach helped significantly, as now relative positions were automatically correct, and operators were placed in almost correct relative positions.
 
 
-###### Step 2: Identify the operators
+##### Step 2: Identify the operators
 
 The identification of the operators is done utilizing regular expression matching based approach. The approach we used was to create a dictionary of all the entries of all the possible text that could mean an operator in mathematics. 
 For example, in the dictionary of operators, greater than or equal to, greater than equal to, can map to ‘≥’. In addition to that, the text data, sum of, addition, add, plus, etc. maps to the operator ‘+’.
@@ -31,7 +37,7 @@ We later came up with the idea of identifying operators in-place in the input st
 This approach helped significantly, as now relative positions were automatically correct, and operators were placed in almost correct relative positions.
 
 
-###### Step 3: Identify the operands
+##### Step 3: Identify the operands
 
 The operands are varied, and can take various forms that are beyond the scope of pattern matching and regular expression matching. Thus, regular expression based matching will not work for identifying the operands.
 Instead, we used the window of size k, approach to identify operands. After completing step 3.2.1, we would be left with string of the following form:
@@ -74,4 +80,3 @@ Speed of vehicle X should be more than speed of vehicle Y by 10m/s
 speed_vehicle_X= Speed_vehicle_Y+10m/s
 
 
-###### How to Run:
